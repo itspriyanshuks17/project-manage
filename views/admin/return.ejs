@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Process Returns - Asset Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-red-600 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <h1 class="text-xl font-bold">Asset Management</h1>
+                    </div>
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="/admin/dashboard" class="hover:bg-red-700 px-3 py-2 rounded-md text-sm font-medium">
+                            <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+                        </a>
+                        <a href="/admin/return" class="bg-red-700 px-3 py-2 rounded-md text-sm font-medium">
+                            <i class="fas fa-undo mr-2"></i>Returns
+                        </a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm">Welcome, <%= user.name %> (Administrator)</span>
+                    <form action="/logout" method="POST" class="inline">
+                        <button type="submit" class="bg-gray-700 hover:bg-gray-800 px-3 py-2 rounded-md text-sm font-medium">
+                            <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold text-gray-900">Asset Returns Management</h2>
+            <p class="text-gray-600 mt-2">Process returns of assigned assets and update inventory</p>
+        </div>
+
+        <!-- Returns Table -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 bg-orange-50">
+                <h3 class="text-lg font-semibold text-gray-900">
+                    <i class="fas fa-undo mr-2 text-orange-600"></i>Assets Available for Return
+                </h3>
+            </div>
+            
+            <% if (assignments.length === 0) { %>
+                <div class="p-8 text-center">
+                    <i class="fas fa-check-circle text-6xl text-green-400 mb-4"></i>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-2">All Returns Processed!</h3>
+                    <p class="text-gray-600">No assets are currently assigned and available for return.</p>
+                </div>
+            <% } else { %>
+                <div class="divide-y divide-gray-200">
+                    <% assignments.forEach(assignment => { %>
+                        <div class="p-6 hover:bg-gray-50">
+                            <div class="flex items-center justify-between">
+                                <div class="flex-1">
+                                    <div class="flex items-center space-x-4 mb-3">
+                                        <div class="flex items-center space-x-2">
+                                            <i class="fas fa-user text-blue-500"></i>
+                                            <span class="font-medium text-gray-900"><%= assignment.employee_name %></span>
+                                        </div>
+                                        <div class="flex items-center space-x-2">
+                                            <i class="fas fa-box text-purple-500"></i>
+                                            <span class="font-medium text-gray-900"><%= assignment.product_name %></span>
+                                        </div>
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                            Qty: <%= assignment.quantity %>
+                                        </span>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <p class="text-sm text-gray-600">
+                                            <strong>Assignment Reason:</strong> <%= assignment.reason || 'N/A' %>
+                                        </p>
+                                    </div>
+                                    
+                                    <div class="flex items-center space-x-6 text-sm text-gray-500">
+                                        <span>
+                                            <i class="fas fa-calendar mr-1"></i>
+                                            Assigned: <%= new Date(assignment.created_at).toLocaleDateString() %>
+                                        </span>
+                                        <span>
+                                            <i class="fas fa-check-circle mr-1"></i>
+                                            Approved: <%= new Date(assignment.approved_at).toLocaleDateString() %>
+                                        </span>
+                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            <i class="fas fa-handshake mr-1"></i>Currently Assigned
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <div class="ml-6">
+                                    <form action="/admin/return/<%= assignment.id %>" method="POST" class="inline">
+                                        <button type="submit" 
+                                                onclick="return confirm('Are you sure you want to process the return for this asset? This will add the quantity back to inventory.')"
+                                                class="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition duration-200 font-medium">
+                                            <i class="fas fa-undo mr-2"></i>Process Return
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    <% }) %>
+                </div>
+            <% } %>
+        </div>
+
+        <!-- Return Process Info -->
+        <div class="mt-8 bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-xl font-semibold text-gray-900 mb-4">
+                <i class="fas fa-info-circle mr-2"></i>Return Process Information
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <i class="fas fa-check-circle text-blue-600 text-2xl mb-3"></i>
+                    <h4 class="text-sm font-medium text-blue-800 mb-2">Step 1: Verify Asset</h4>
+                    <p class="text-xs text-blue-700">Confirm the employee is returning the correct asset and quantity.</p>
+                </div>
+                <div class="bg-green-50 p-4 rounded-lg">
+                    <i class="fas fa-sync text-green-600 text-2xl mb-3"></i>
+                    <h4 class="text-sm font-medium text-green-800 mb-2">Step 2: Process Return</h4>
+                    <p class="text-xs text-green-700">Click "Process Return" to mark the asset as returned and update inventory.</p>
+                </div>
+                <div class="bg-purple-50 p-4 rounded-lg">
+                    <i class="fas fa-warehouse text-purple-600 text-2xl mb-3"></i>
+                    <h4 class="text-sm font-medium text-purple-800 mb-2">Step 3: Inventory Updated</h4>
+                    <p class="text-xs text-purple-700">The product quantity is automatically added back to the inventory.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="mt-8 bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-xl font-semibold text-gray-900 mb-4">
+                <i class="fas fa-chart-bar mr-2"></i>Return Statistics
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="text-center p-4 bg-orange-50 rounded-lg">
+                    <i class="fas fa-clock text-2xl text-orange-600 mb-2"></i>
+                    <p class="text-sm text-gray-600">Pending Returns</p>
+                    <p class="text-2xl font-bold text-orange-600"><%= assignments.length %></p>
+                </div>
+                <div class="text-center p-4 bg-blue-50 rounded-lg">
+                    <i class="fas fa-handshake text-2xl text-blue-600 mb-2"></i>
+                    <p class="text-sm text-gray-600">Total Assigned</p>
+                    <p class="text-2xl font-bold text-blue-600"><%= assignments.reduce((sum, a) => sum + a.quantity, 0) %></p>
+                </div>
+                <div class="text-center p-4 bg-green-50 rounded-lg">
+                    <i class="fas fa-undo text-2xl text-green-600 mb-2"></i>
+                    <p class="text-sm text-gray-600">Quick Process</p>
+                    <p class="text-xs text-gray-500 mt-1">One-click returns</p>
+                </div>
+                <div class="text-center p-4 bg-purple-50 rounded-lg">
+                    <i class="fas fa-boxes text-2xl text-purple-600 mb-2"></i>
+                    <p class="text-sm text-gray-600">Auto Inventory</p>
+                    <p class="text-xs text-gray-500 mt-1">Automatic stock updates</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="mt-8 flex flex-wrap gap-4">
+            <a href="/admin/products" 
+               class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition duration-200">
+                <i class="fas fa-plus mr-2"></i>Add Products
+            </a>
+            <a href="/admin/assign" 
+               class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition duration-200">
+                <i class="fas fa-hand-holding mr-2"></i>Assign Assets
+            </a>
+            <a href="/admin/stock" 
+               class="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition duration-200">
+                <i class="fas fa-list mr-2"></i>View Stock
+            </a>
+            <a href="/admin/dashboard" 
+               class="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition duration-200">
+                <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+            </a>
+        </div>
+    </main>
+</body>
+</html>
