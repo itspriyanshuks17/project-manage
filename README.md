@@ -80,10 +80,23 @@ A comprehensive web-based asset management system built with Node.js, Express, E
 
 ## Quick Start
 
+### Automated Setup (Recommended)
+
+**Linux/macOS:**
+```bash
+chmod +x scripts/linux/setup.sh && ./scripts/linux/setup.sh
+```
+
+**Windows:**
+```cmd
+scripts\windows\setup.bat
+```
+
+### Manual Setup
 1. Start MySQL server
 2. Create database: `CREATE DATABASE asset_management;`
 3. Run: `npm install && node create-users.js && npm run dev`
-4. Visit: `http://localhost:3000`
+4. Visit: `http://localhost:8080`
 5. Login with any of the default credentials above
 
 ## Project Structure
@@ -94,6 +107,25 @@ project-manage/
 ├── package.json           # Dependencies and scripts
 ├── database.sql           # Database schema and sample data
 ├── create-users.js        # Script to create default users
+├── docker/                # Docker configuration files
+│   ├── Dockerfile         # Container definition
+│   ├── docker-compose.yml # Multi-container setup
+│   ├── healthcheck.js     # Health monitoring
+│   ├── docker-init.sql    # Database initialization
+│   ├── .dockerignore      # Docker build exclusions
+│   ├── DOCKER.md          # Docker documentation
+│   └── README.md          # Docker directory guide
+├── scripts/               # Setup and deployment scripts
+│   ├── linux/             # Linux/macOS scripts
+│   │   ├── setup.sh       # Development setup
+│   │   ├── docker-deploy.sh # Docker deployment
+│   │   └── README.md      # Linux scripts guide
+│   ├── windows/           # Windows scripts
+│   │   ├── setup.bat      # Basic Windows setup
+│   │   ├── setup.ps1      # PowerShell setup
+│   │   ├── docker-deploy.bat # Windows Docker deployment
+│   │   └── README.md      # Windows scripts guide
+│   └── README.md          # Scripts overview
 ├── views/                 # EJS templates
 │   ├── login.ejs          # Login page
 │   ├── error.ejs          # Error page
@@ -561,32 +593,53 @@ const config = {
 - **Unit Testing**: Jest/Mocha test suite implementation
 - **CI/CD Pipeline**: Automated testing and deployment
 
-## Windows Setup Instructions
+### Linux/Mac Setup
+```bash
+# Make scripts executable
+chmod +x scripts/linux/*.sh
 
-### Option 1: Using Batch File (setup.bat)
-For basic Windows Command Prompt users:
-```cmd
-setup.bat
+# Run complete setup
+./scripts/linux/setup.sh
 ```
 
-### Option 2: Using PowerShell (setup.ps1) - Recommended
-For enhanced experience with colored output and better error handling:
+### Windows Setup
 
-**Method A: Right-click and "Run with PowerShell"**
-1. Right-click on `setup.ps1`
-2. Select "Run with PowerShell"
-3. Follow the prompts
+**Option 1: Using Batch File (setup.bat)**
+```cmd
+scripts\windows\setup.bat
+```
 
-**Method B: Command Line**
+**Option 2: Using PowerShell (setup.ps1) - Recommended**
 ```powershell
 # If you get execution policy errors, first run:
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 
 # Then run the setup:
-./setup.ps1
+.\scripts\windows\setup.ps1
+```
 
-# Or with prerequisites skip (if already installed):
-./setup.ps1 -SkipPrerequisites
+## Docker Deployment
+
+### Quick Docker Setup
+```bash
+# Using Docker Compose (from project root)
+cd docker && docker-compose up -d
+
+# Manual Docker build
+docker build -f docker/Dockerfile -t asset-management .
+docker run -d -p 8080:8080 asset-management
+```
+
+### Deploy to Docker Hub
+
+**Linux/Mac:**
+```bash
+./scripts/linux/docker-deploy.sh
+```
+
+**Windows:**
+```cmd
+scripts\windows\docker-deploy.bat
 ```
 
 ### Windows-Specific Notes
