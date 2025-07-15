@@ -560,3 +560,63 @@ const config = {
 - **API Documentation**: OpenAPI/Swagger documentation
 - **Unit Testing**: Jest/Mocha test suite implementation
 - **CI/CD Pipeline**: Automated testing and deployment
+
+## Windows Setup Instructions
+
+### Option 1: Using Batch File (setup.bat)
+For basic Windows Command Prompt users:
+```cmd
+setup.bat
+```
+
+### Option 2: Using PowerShell (setup.ps1) - Recommended
+For enhanced experience with colored output and better error handling:
+
+**Method A: Right-click and "Run with PowerShell"**
+1. Right-click on `setup.ps1`
+2. Select "Run with PowerShell"
+3. Follow the prompts
+
+**Method B: Command Line**
+```powershell
+# If you get execution policy errors, first run:
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+# Then run the setup:
+./setup.ps1
+
+# Or with prerequisites skip (if already installed):
+./setup.ps1 -SkipPrerequisites
+```
+
+### Windows-Specific Notes
+
+**Prerequisites for Windows:**
+- **Node.js**: Download from [nodejs.org](https://nodejs.org/)
+- **MySQL Server**: Download from [MySQL Downloads](https://dev.mysql.com/downloads/mysql/)
+- **Git** (optional): Download from [git-scm.com](https://git-scm.com/)
+
+**Common Windows Issues:**
+
+1. **PowerShell Execution Policy**
+   ```powershell
+   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+   ```
+
+2. **MySQL PATH Issues**
+   - Add MySQL bin directory to your system PATH
+   - Usually: `C:\Program Files\MySQL\MySQL Server 8.0\bin`
+
+3. **Port Already in Use**
+   ```cmd
+   # Find process using port 8080
+   netstat -ano | findstr :8080
+   
+   # Kill the process (replace PID with actual process ID)
+   taskkill /PID <PID> /F
+   ```
+
+4. **Database Connection Issues**
+   - Ensure MySQL service is running
+   - Check Windows Services (`services.msc`)
+   - Verify credentials in `.env` file
