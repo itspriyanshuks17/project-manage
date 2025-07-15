@@ -55,6 +55,28 @@ const requireAuth = (req, res, next) => {
     }
 };
 
+// Health check endpoint for Docker
+app.get('/health', (req, res) => {
+    // Check database connection
+    db.ping((err) => {
+        if (err) {
+            console.error('Health check failed - Database error:', err);
+            return res.status(503).json({ 
+                status: 'unhealthy', 
+                error: 'Database connection failed',
+                timestamp: new Date().toISOString()
+            });
+        }
+        
+        res.status(200).json({ 
+            status: 'healthy', 
+            database: 'connected',
+            timestamp: new Date().toISOString(),
+            uptime: process.uptime()
+        });
+    });
+});
+
 const requireRole = (roles) => {
     return (req, res, next) => {
         if (req.session.user && roles.includes(req.session.user.role)) {
