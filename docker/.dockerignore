@@ -1,0 +1,66 @@
+# Ignore node_modules
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Ignore environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Ignore OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Ignore IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Ignore log files
+logs
+*.log
+
+# Ignore temporary files
+tmp/
+temp/
+
+# Ignore Git files
+.git
+.gitignore
+
+# Ignore build artifacts
+dist/
+build/
+
+# Ignore test coverage
+coverage/
+
+# Ignore database files (if any local db files)
+*.db
+*.sqlite
+*.sqlite3
+
+# Ignore setup scripts (not needed in production)
+setup.sh
+setup.bat
+setup.ps1
+test-setup.js
+
+# Ignore development config
+config.json
+
+# Ignore documentation that's not needed in production
+README.md
+CHANGELOG.md
+LICENSE
