@@ -1,0 +1,55 @@
+services:
+  # Asset Management Application
+  asset-management:
+    build: 
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "0.0.0.0:80:8080"     # Bind to all interfaces on port 80
+      - "0.0.0.0:8081:8080"   # Alternative port for testing
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=mysql
+      - DB_USER=asset_user
+      - DB_PASSWORD=SecurePassword123!
+      - DB_NAME=asset_management
+      - SESSION_SECRET=change-this-to-a-very-secure-random-string-in-production
+      - HOST=0.0.0.0
+      - PORT=8080
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - asset-network
+
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: SecureRootPassword123!
+      MYSQL_DATABASE: asset_management
+      MYSQL_USER: asset_user
+      MYSQL_PASSWORD: SecurePassword123!
+    ports:
+      - "3307:3306"  # External access to database (optional)
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ../database.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./docker-init.sql:/docker-entrypoint-initdb.d/02-init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - asset-network
+
+volumes:
+  mysql_data:
+
+networks:
+  asset-network:
+    driver: bridge
