@@ -2,13 +2,13 @@ require('dotenv').config();
 const bcrypt = require('bcryptjs');
 const mysql = require('mysql2');
 
-// Database connection
+// Database connection for Cloud SQL
 const db = mysql.createConnection({
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'asset_management',
-    port: process.env.DB_PORT || 3306
+    host: '34.170.4.31',  // Your Cloud SQL IP
+    user: 'root',
+    password: 'sigma',
+    database: 'asset_management',
+    port: 3306
 });
 
 async function createDefaultUsers() {
