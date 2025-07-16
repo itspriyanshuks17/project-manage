@@ -31,7 +31,7 @@ async function createDefaultUsers() {
         // Create users
         const users = [
             ['admin', adminPassword, 'System Administrator', 'admin'],
-            ['manager1', managerPassword, 'John Manager', 'manager'],
+            ['manager1', managerPassword, 'The Manager', 'manager'],
             ['employee1', employeePassword, 'Jane Employee', 'employee']
         ];
         
