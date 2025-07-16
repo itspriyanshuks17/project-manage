@@ -514,6 +514,9 @@ app.use((req, res) => {
     res.status(404).render('error', { message: 'Page not found' });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server is running on port ${PORT}`);
+    console.log(`Local access: http://localhost:${PORT}`);
+    console.log(`Network access: http://YOUR_IP_ADDRESS:${PORT}`);
+    console.log(`Health check: http://YOUR_IP_ADDRESS:${PORT}/health`);
 });
