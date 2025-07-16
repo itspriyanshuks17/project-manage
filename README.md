@@ -642,6 +642,44 @@ docker run -d -p 8080:8080 asset-management
 scripts\windows\docker-deploy.bat
 ```
 
+## Google Cloud Platform (GCP) Deployment
+
+### 🌍 Deploy to Google Cloud for Global Access
+
+Deploy your Asset Management System to Google Cloud Platform for worldwide accessibility:
+
+```bash
+# Quick GCP deployment
+./deploy-gcp.sh
+```
+
+### Prerequisites
+- Google Cloud Platform account
+- Google Cloud CLI installed
+- Billing enabled on your GCP project
+
+### What Gets Deployed
+- **App Engine**: Scalable Node.js application hosting
+- **Cloud SQL**: Managed MySQL database
+- **Global CDN**: Fast content delivery worldwide
+- **SSL/HTTPS**: Automatic security certificates
+- **Auto-scaling**: Handles traffic spikes automatically
+
+### Features
+- ✅ **Global Access**: Available from any device, anywhere
+- ✅ **High Availability**: 99.9% uptime guarantee
+- ✅ **Auto-scaling**: Handles 1-1000+ concurrent users
+- ✅ **Secure**: HTTPS, encrypted database, IAM controls
+- ✅ **Cost-effective**: Pay only for what you use (~$10-15/month)
+
+### After Deployment
+Your application will be available at:
+- **URL**: `https://YOUR_PROJECT_ID.appspot.com`
+- **Access**: From any device, any network, anywhere in the world
+- **Perfect for**: Multi-device access, remote teams, different networks
+
+For detailed instructions, see: [`gcp/README.md`](gcp/README.md)
+
 ### Windows-Specific Notes
 
 **Prerequisites for Windows:**
