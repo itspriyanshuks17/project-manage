@@ -42,13 +42,13 @@ jspm_packages/
 
 # dotenv environment variables file
 .env
-
 # IDE files
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+
 
 # OS generated files
 .DS_Store
@@ -75,3 +75,7 @@ public/uploads/
 # Build directories
 build/
 dist/
+
+
+# Ai files
+.qodo
