@@ -1,0 +1,68 @@
+# Google App Engine configuration for Asset Management System
+runtime: nodejs20
+
+# Environment variables
+env_variables:
+  NODE_ENV: "production"
+  PORT: "8080"
+  DB_HOST: "/cloudsql/gdgocwow25:us-central1:asset-db"
+  DB_USER: "app-user"
+  DB_PASSWORD: "sigma"
+  DB_NAME: "asset_management"
+  DB_PORT: "3306"
+  SESSION_SECRET: ""
+
+# Cloud SQL configuration
+beta_settings:
+  cloud_sql_instances: "gdgocwow25:us-central1:asset-db"
+
+# Scaling configuration
+automatic_scaling:
+  min_instances: 1
+  max_instances: 10
+  target_cpu_utilization: 0.6
+
+# Health check configuration
+readiness_check:
+  path: "/health"
+  check_interval_sec: 5
+  timeout_sec: 4
+  failure_threshold: 2
+  success_threshold: 2
+
+liveness_check:
+  path: "/health"
+  check_interval_sec: 30
+  timeout_sec: 4
+  failure_threshold: 4
+  success_threshold: 2
+
+# Static files
+handlers:
+- url: /public
+  static_dir: public
+  secure: always
+
+- url: /.*
+  script: auto
+  secure: always
+
+# Skip files (don't upload these to App Engine)
+skip_files:
+- ^(.*/)?#.*#$
+- ^(.*/)?.*~$
+- ^(.*/)?.*\.py[co]$
+- ^(.*/)?.*/RCS/.*$
+- ^(.*/)?\..*$
+- ^(.*/)?node_modules/.*$
+- ^(.*/)?test/.*$
+- ^(.*/)?tests/.*$
+- ^(.*/)?\.env$
+- ^(.*/)?\.env\..*$
+- ^(.*/)?docker/.*$
+- ^(.*/)?scripts/.*$
+- ^(.*/)?\.git/.*$
+- ^(.*/)?README\.md$
+- ^(.*/)?\.dockerignore$
+- ^(.*/)?Dockerfile$
+- ^(.*/)?docker-compose\..*$

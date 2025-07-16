@@ -1,0 +1,81 @@
+# .gcloudignore - files to ignore when deploying to Google Cloud Platform
+
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Development files
+.env
+.env.*
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Docker files
+docker/
+Dockerfile
+docker-compose.yml
+docker-compose.*.yml
+.dockerignore
+
+# Scripts
+scripts/
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Test files
+test/
+tests/
+*.test.js
+*.spec.js
+
+# Documentation
+README.md
+*.md
+docs/
+
+# Backup files
+*.bak
+*.backup
+
+# Temporary files
+tmp/
+temp/
+
+# Build artifacts
+build/
+dist/
+
+# Coverage reports
+coverage/
+.nyc_output/
+
+# Local development database
+*.sqlite
+*.db
+
+# Success file
+SUCCESS.md
+
+# GCP deployment files (keep only necessary ones)
+gcp/deploy.sh
+gcp/cloud-sql-init.sql
