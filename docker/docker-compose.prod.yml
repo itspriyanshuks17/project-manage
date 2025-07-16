@@ -1,55 +1,66 @@
+version: '3.8'
+
 services:
-  # Asset Management Application
-  asset-management:
-    build: 
+  mysql:
+    image: mysql:8.0
+    container_name: asset-db-prod
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-super-secure-root-password}
+      MYSQL_DATABASE: ${DB_NAME:-asset_management}
+      MYSQL_USER: ${DB_USER:-sigma}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-sigma}
+    volumes:
+      - ../database.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./docker-init.sql:/docker-entrypoint-initdb.d/02-init.sql
+      - db-data-prod:/var/lib/mysql
+    expose:
+      - "3306"  # Only expose to other containers, not to host
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "${DB_USER:-sigma}", "-p${DB_PASSWORD:-sigma}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - asset-network-prod
+
+  app:
+    build:
       context: ..
       dockerfile: docker/Dockerfile
+    container_name: asset-app-prod
+    restart: unless-stopped
     ports:
-      - "0.0.0.0:80:8080"     # Bind to all interfaces on port 80
-      - "0.0.0.0:8081:8080"   # Alternative port for testing
+      - "80:8080"   # Map to port 80 for production
+      - "443:8080"  # For HTTPS (you'll need to configure SSL)
     environment:
-      - NODE_ENV=production
-      - DB_HOST=mysql
-      - DB_USER=asset_user
-      - DB_PASSWORD=SecurePassword123!
-      - DB_NAME=asset_management
-      - SESSION_SECRET=change-this-to-a-very-secure-random-string-in-production
-      - HOST=0.0.0.0
-      - PORT=8080
+      NODE_ENV: production
+      DB_HOST: mysql
+      DB_USER: ${DB_USER:-sigma}
+      DB_PASSWORD: ${DB_PASSWORD:-sigma}
+      DB_NAME: ${DB_NAME:-asset_management}
+      DB_PORT: 3306
+      SESSION_SECRET: ${SESSION_SECRET:-asset-management-super-secret-production-key-2025}
+      BCRYPT_ROUNDS: 12
+      PORT: 8080
+      HOST: 0.0.0.0
     depends_on:
       mysql:
         condition: service_healthy
-    restart: unless-stopped
-    networks:
-      - asset-network
-
-  # MySQL Database
-  mysql:
-    image: mysql:8.0
-    environment:
-      MYSQL_ROOT_PASSWORD: SecureRootPassword123!
-      MYSQL_DATABASE: asset_management
-      MYSQL_USER: asset_user
-      MYSQL_PASSWORD: SecurePassword123!
-    ports:
-      - "3307:3306"  # External access to database (optional)
-    volumes:
-      - mysql_data:/var/lib/mysql
-      - ../database.sql:/docker-entrypoint-initdb.d/01-schema.sql
-      - ./docker-init.sql:/docker-entrypoint-initdb.d/02-init.sql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:8080/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"]
       interval: 30s
       timeout: 10s
-      retries: 5
-      start_period: 30s
-    restart: unless-stopped
+      retries: 3
+      start_period: 40s
     networks:
-      - asset-network
+      - asset-network-prod
 
 volumes:
-  mysql_data:
+  db-data-prod:
+    driver: local
 
 networks:
-  asset-network:
+  asset-network-prod:
     driver: bridge
