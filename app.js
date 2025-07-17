@@ -11,21 +11,43 @@ const app = express();
 const PORT = process.env.PORT || 8080;
 
 // Database connection
-const db = mysql.createConnection({
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'asset_management',
-    port: process.env.DB_PORT || 3306
-});
+let dbConfig;
+if (process.env.NODE_ENV === 'production' && process.env.DB_HOST.includes('/cloudsql/')) {
+    // Cloud SQL socket connection
+    dbConfig = {
+        socketPath: process.env.DB_HOST,
+        user: process.env.DB_USER || 'root',
+        password: process.env.DB_PASSWORD || '',
+        database: process.env.DB_NAME || 'asset_management',
+        acquireTimeout: 60000,
+        timeout: 60000,
+        reconnect: true
+    };
+} else {
+    // Local connection
+    dbConfig = {
+        host: process.env.DB_HOST || 'localhost',
+        user: process.env.DB_USER || 'root',
+        password: process.env.DB_PASSWORD || '',
+        database: process.env.DB_NAME || 'asset_management',
+        port: process.env.DB_PORT || 3306,
+        acquireTimeout: 60000,
+        timeout: 60000,
+        reconnect: true
+    };
+}
 
-// Connect to database
-db.connect((err) => {
+// Create connection pool for better reliability
+const db = mysql.createPool(dbConfig);
+
+// Test database connection
+db.getConnection((err, connection) => {
     if (err) {
         console.error('Database connection failed:', err);
         return;
     }
     console.log('Connected to MySQL database');
+    connection.release();
 });
 
 // Middleware
@@ -514,6 +536,9 @@ app.use((req, res) => {
     res.status(404).render('error', { message: 'Page not found' });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server is running on port ${PORT}`);
+    console.log(`Local access: http://localhost:${PORT}`);
+    console.log(`Network access: http://YOUR_IP_ADDRESS:${PORT}`);
+    console.log(`Health check: http://YOUR_IP_ADDRESS:${PORT}/health`);
 });

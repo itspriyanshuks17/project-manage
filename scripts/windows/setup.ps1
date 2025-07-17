@@ -11,29 +11,29 @@ Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
 # Clear screen and show header
 Clear-Host
 Write-Host ""
-Write-Host "🚀 Asset Management System Setup (PowerShell)" -ForegroundColor Cyan
+Write-Host "Asset Management System Setup (PowerShell)" -ForegroundColor Cyan
 Write-Host "=============================================" -ForegroundColor Cyan
 Write-Host ""
 
 # Function to print colored output
 function Write-Success {
     param([string]$Message)
-    Write-Host "✓ $Message" -ForegroundColor Green
+    Write-Host "+ $Message" -ForegroundColor Green
 }
 
 function Write-Warning {
     param([string]$Message)
-    Write-Host "⚠ $Message" -ForegroundColor Yellow
+    Write-Host "! $Message" -ForegroundColor Yellow
 }
 
 function Write-Error-Custom {
     param([string]$Message)
-    Write-Host "✗ $Message" -ForegroundColor Red
+    Write-Host "x $Message" -ForegroundColor Red
 }
 
 function Write-Info {
     param([string]$Message)
-    Write-Host "ℹ $Message" -ForegroundColor Blue
+    Write-Host "> $Message" -ForegroundColor Blue
 }
 
 function Test-Command {
@@ -163,6 +163,7 @@ try {
     if (-not (Test-Path "create-users.js")) {
         Write-Error-Custom "create-users.js file not found in current directory"
         Read-Host "Press Enter to exit"
+        Write-Error-Custom "create-users.js file not found in current directory"
         exit 1
     }
     
@@ -172,7 +173,6 @@ try {
     } else {
         Write-Error-Custom "Failed to create default users"
         Write-Host $createUsersResult -ForegroundColor Red
-        Read-Host "Press Enter to exit"
         exit 1
     }
 } catch {
@@ -198,7 +198,7 @@ Write-Host ""
 
 # Success message
 Write-Host ""
-Write-Host "🎉 Setup completed successfully!" -ForegroundColor Green -BackgroundColor Black
+Write-Host "Setup completed successfully!" -ForegroundColor Green -BackgroundColor Black
 Write-Host ""
 Write-Host "Next steps:" -ForegroundColor Cyan
 Write-Host "1. Start the application: " -NoNewline; Write-Host "npm run dev" -ForegroundColor Yellow
@@ -209,7 +209,7 @@ Write-Host "   Admin:    " -NoNewline; Write-Host "admin / admin123" -Foreground
 Write-Host "   Manager:  " -NoNewline; Write-Host "manager1 / manager123" -ForegroundColor Green  
 Write-Host "   Employee: " -NoNewline; Write-Host "employee1 / employee123" -ForegroundColor Green
 Write-Host ""
-Write-Host "Happy coding! 🚀" -ForegroundColor Magenta
+Write-Host "Happy coding!" -ForegroundColor Magenta
 Write-Host ""
 
 # Optional: Ask if user wants to start the application now

@@ -1,5 +1,5 @@
-# Use official Node.js runtime as base image
-FROM node:18-alpine
+# Use official Node.js runtime as base image (security-focused)
+FROM node:20-alpine
 
 # Set the working directory inside the container
 WORKDIR /app
@@ -8,23 +8,19 @@ WORKDIR /app
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
 
-# Copy package.json and package-lock.json (if available)
+# Install dependencies first (better Docker layer caching)
 COPY package*.json ./
-
-# Install dependencies
 RUN npm ci --only=production && npm cache clean --force
 
 # Copy the rest of the application code
 COPY . .
 
-# Copy healthcheck script to the correct location
-COPY docker/healthcheck.js ./healthcheck.js
+# Copy Docker-specific environment file
+COPY docker/.env.docker .env
 
-# Create necessary directories
-RUN mkdir -p /app/views /app/public
-
-# Change ownership of the app directory to nodejs user
-RUN chown -R nodejs:nodejs /app
+# Create necessary directories and set permissions
+RUN mkdir -p /app/views /app/public /app/logs && \
+    chown -R nodejs:nodejs /app
 
 # Switch to non-root user
 USER nodejs
@@ -37,8 +33,8 @@ ENV NODE_ENV=production
 ENV PORT=8080
 
 # Health check to ensure the container is running properly
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node healthcheck.js || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:8080/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"
 
 # Start the application
 CMD ["npm", "start"]

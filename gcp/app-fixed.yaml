@@ -1,0 +1,28 @@
+runtime: nodejs20
+
+entrypoint: node app.js
+
+env_variables:
+  NODE_ENV: "production"
+  PORT: "8080"
+  DB_HOST: "127.0.0.1"
+  DB_USER: "sigma"
+  DB_PASSWORD: "sigma"
+  DB_NAME: "asset_management"
+  DB_PORT: "3306"
+  SESSION_SECRET: "your-session-secret-gcp-deploy-12345"
+  DISABLE_DB: "true"
+
+automatic_scaling:
+  min_instances: 1
+  max_instances: 10
+  target_cpu_utilization: 0.6
+
+handlers:
+- url: /public
+  static_dir: public
+  secure: always
+
+- url: /.*
+  script: auto
+  secure: always

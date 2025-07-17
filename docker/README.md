@@ -8,18 +8,29 @@ This directory contains all Docker-related configuration files for the Asset Man
 - **`Dockerfile`** - Main container definition with Node.js Alpine base
 - **`.dockerignore`** - Files to exclude from Docker build context
 - **`docker-compose.yml`** - Multi-container orchestration (app + MySQL)
+- **`docker-compose.prod.yml`** - Production configuration
+- **`.env.docker`** - Docker-specific environment variables
 - **`healthcheck.js`** - Container health monitoring script
 - **`docker-init.sql`** - Database initialization and sample data
+
+### Management Scripts
+- **`docker-manager.sh`** - Interactive Docker management
+- **`quick-deploy.sh`** - Quick deployment script
+- **`fix-deployment.sh`** - Fix common deployment issues
+- **`setup-docker.sh`** - Initial Docker setup
 
 ### Documentation
 - **`DOCKER.md`** - Comprehensive Docker deployment guide
 
 ## 🚀 Quick Usage
 
-### Using Docker Compose (from project root)
+### Using Docker Compose (from docker directory)
 ```bash
+# Navigate to docker directory
+cd docker
+
 # Start the entire stack
-cd docker && docker-compose up -d
+docker-compose up -d
 
 # View logs
 docker-compose logs -f
@@ -28,26 +39,29 @@ docker-compose logs -f
 docker-compose down
 ```
 
-### Building Image Manually (from project root)
+### Using Management Scripts
 ```bash
-# Build the image
-docker build -f docker/Dockerfile -t asset-management .
+# From project root
+./deploy.sh                # Quick deployment
+./docker-manager.sh         # Interactive management
 
-# Run the container
-docker run -d -p 8080:8080 asset-management
+# From docker directory
+./quick-deploy.sh          # Quick deployment
+./docker-manager.sh        # Interactive management
+./fix-deployment.sh        # Fix issues
 ```
 
 ## 🔧 Configuration
 
 The Docker setup includes:
-- **Node.js 18 Alpine** base image for minimal size
+- **Node.js 20 Alpine** base image for minimal size
 - **Non-root user** (nodejs:1001) for security
 - **Health checks** for monitoring
 - **Multi-stage build** optimization
 - **Persistent MySQL storage**
 - **Automatic database initialization**
 
-## 📁 File Structure
+## 📁 Project Structure
 ```
 docker/
 ├── Dockerfile              # Container definition

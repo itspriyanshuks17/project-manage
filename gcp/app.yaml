@@ -1,0 +1,37 @@
+# Google App Engine configuration for Asset Management System
+runtime: nodejs20
+
+# Environment variables
+env_variables:
+  NODE_ENV: "production"
+  PORT: "8080"
+  DB_HOST: "/cloudsql/gdgocwow25:us-central1:asset-db-fast"
+  DB_USER: "root"
+  DB_PASSWORD: "sigma"
+  DB_NAME: "asset_management"
+  DB_PORT: "3306"
+  SESSION_SECRET: "your-super-secret-session-key-change-this-in-production-12345"
+
+# Cloud SQL configuration
+beta_settings:
+  cloud_sql_instances: "gdgocwow25:us-central1:asset-db-fast"
+
+# Scaling configuration
+automatic_scaling:
+  min_instances: 1
+  max_instances: 10
+  target_cpu_utilization: 0.6
+
+
+
+# Static files
+handlers:
+- url: /public
+  static_dir: public
+  secure: always
+
+- url: /.*
+  script: auto
+  secure: always
+
+
