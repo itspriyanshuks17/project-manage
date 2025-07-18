@@ -3,7 +3,7 @@
 # Quick Docker Deployment Wrapper
 # This script calls the docker deployment from the docker directory
 
-echo "🚀 Asset Management System - Docker Deployment"
+echo "Asset Management System - Docker Deployment"
 echo "=============================================="
 
 # Navigate to docker directory and run deployment
