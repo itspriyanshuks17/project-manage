@@ -1,0 +1,139 @@
+name: Pull Request Checks
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  # Quick validation for PRs
+  validate:
+    name: Validate PR
+    runs-on: ubuntu-latest
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: test_password
+          MYSQL_DATABASE: asset_management_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Create test environment file
+      run: |
+        cat > .env << EOF
+        NODE_ENV=test
+        DB_HOST=127.0.0.1
+        DB_USER=root
+        DB_PASSWORD=test_password
+        DB_NAME=asset_management_test
+        DB_PORT=3306
+        SESSION_SECRET=test-secret-key
+        PORT=3000
+        EOF
+
+    - name: Wait for MySQL
+      run: |
+        for i in {30..0}; do
+          if mysqladmin ping -h "127.0.0.1" --silent; then
+            break
+          fi
+          echo 'MySQL is unavailable - sleeping'
+          sleep 1
+        done
+
+    - name: Setup test database
+      run: |
+        mysql -h 127.0.0.1 -u root -ptest_password asset_management_test < database.sql
+
+    - name: Check code syntax
+      run: node -c app.js
+
+    - name: Run security audit
+      run: npm audit --audit-level=moderate
+
+    - name: Test application startup
+      run: |
+        timeout 30 npm start &
+        PID=$!
+        sleep 10
+        if ps -p $PID > /dev/null; then
+          echo "Application started successfully"
+          kill $PID
+        else
+          echo "Application failed to start"
+          exit 1
+        fi
+
+  # Code quality check
+  code-quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Check for potential issues
+      run: |
+        # Check for common issues
+        echo "Checking for potential security issues..."
+        
+        # Check for hardcoded secrets (basic check)
+        if grep -r -i "password.*=.*['\"].*['\"]" . --include="*.js" --exclude-dir=node_modules; then
+          echo "⚠️  Warning: Potential hardcoded passwords found"
+        fi
+        
+        # Check for TODO/FIXME comments
+        if grep -r -n "TODO\|FIXME\|XXX" . --include="*.js" --exclude-dir=node_modules; then
+          echo "📝 TODO/FIXME comments found"
+        fi
+        
+        # Check for console.log statements (should be removed in production)
+        if grep -r -n "console\.log" . --include="*.js" --exclude-dir=node_modules; then
+          echo "⚠️  Warning: console.log statements found (consider using proper logging)"
+        fi
+
+    - name: Check package.json for issues
+      run: |
+        # Check for outdated dependencies
+        npm outdated || echo "Some dependencies may be outdated"
+        
+        # Verify package.json structure
+        node -e "
+          const pkg = require('./package.json');
+          if (!pkg.scripts.start) console.log('⚠️  Missing start script');
+          if (!pkg.description) console.log('⚠️  Missing description');
+          if (!pkg.author) console.log('⚠️  Missing author');
+          console.log('✅ Package.json validation complete');
+        "

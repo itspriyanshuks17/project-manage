@@ -1,0 +1,186 @@
+name: Dependency and Security Monitor
+
+on:
+  schedule:
+    # Run every Monday at 9 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch: # Allow manual triggering
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  # Check for dependency updates
+  dependency-check:
+    name: Check Dependencies
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Check for outdated packages
+      run: |
+        echo "Checking for outdated packages..."
+        npm outdated --json > outdated.json || true
+        
+        if [ -s outdated.json ]; then
+          echo "📦 Outdated packages found:"
+          cat outdated.json
+          
+          # Create issue or comment (you can customize this)
+          echo "Consider updating the following packages:"
+          npm outdated
+        else
+          echo "✅ All packages are up to date"
+        fi
+
+    - name: Security audit
+      run: |
+        echo "Running security audit..."
+        npm audit --json > audit.json || true
+        
+        # Check for high/critical vulnerabilities
+        if npm audit --audit-level=high; then
+          echo "✅ No high-severity vulnerabilities found"
+        else
+          echo "🚨 High-severity vulnerabilities detected!"
+          npm audit
+          
+          # You can add logic here to create issues or send notifications
+        fi
+
+    - name: Check for deprecated packages
+      run: |
+        echo "Checking for deprecated packages..."
+        npm ls --depth=0 --json > packages.json
+        
+        # This is a basic check - you might want to use more sophisticated tools
+        if grep -q "deprecated" packages.json; then
+          echo "⚠️  Deprecated packages found"
+          grep "deprecated" packages.json
+        else
+          echo "✅ No deprecated packages found"
+        fi
+
+  # License compliance check
+  license-check:
+    name: License Compliance
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install license checker
+      run: npm install -g license-checker
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Check licenses
+      run: |
+        echo "Checking package licenses..."
+        license-checker --summary
+        
+        # Generate detailed license report
+        license-checker --json > licenses.json
+        
+        # Check for problematic licenses (customize as needed)
+        if license-checker --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;Apache*' --summary; then
+          echo "✅ All licenses are compliant"
+        else
+          echo "⚠️  Some packages may have licensing issues"
+          license-checker --summary
+        fi
+
+  # Performance and health check
+  health-check:
+    name: Application Health Check
+    runs-on: ubuntu-latest
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: test_password
+          MYSQL_DATABASE: asset_management_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Create test environment
+      run: |
+        cat > .env << EOF
+        NODE_ENV=test
+        DB_HOST=127.0.0.1
+        DB_USER=root
+        DB_PASSWORD=test_password
+        DB_NAME=asset_management_test
+        DB_PORT=3306
+        SESSION_SECRET=test-secret-key
+        PORT=3000
+        EOF
+
+    - name: Setup database
+      run: |
+        mysql -h 127.0.0.1 -u root -ptest_password asset_management_test < database.sql
+
+    - name: Start application and check health
+      run: |
+        # Start the application in background
+        npm start &
+        APP_PID=$!
+        
+        # Wait for application to start
+        sleep 10
+        
+        # Basic health check
+        if curl -f http://localhost:3000 > /dev/null 2>&1; then
+          echo "✅ Application is responding"
+        else
+          echo "❌ Application is not responding"
+          exit 1
+        fi
+        
+        # Check if database connection works
+        if curl -f http://localhost:3000/health > /dev/null 2>&1; then
+          echo "✅ Health endpoint responding"
+        else
+          echo "⚠️  Health endpoint not available (you may want to implement one)"
+        fi
+        
+        # Stop the application
+        kill $APP_PID

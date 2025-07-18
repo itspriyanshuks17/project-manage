@@ -1,0 +1,234 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # Triggers on version tags like v1.0.0, v2.1.3, etc.
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  # Create GitHub Release
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Get version from tag
+      id: get_version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+    - name: Generate changelog
+      id: changelog
+      run: |
+        # Generate changelog from git commits since last tag
+        PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+        
+        if [ -n "$PREVIOUS_TAG" ]; then
+          echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
+          echo "## Changes since $PREVIOUS_TAG" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          git log $PREVIOUS_TAG..HEAD --pretty=format:"- %s (%h)" --no-merges >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        else
+          echo "CHANGELOG=Initial release" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.get_version.outputs.VERSION }}
+        release_name: Release ${{ steps.get_version.outputs.VERSION }}
+        body: |
+          ## Asset Management System ${{ steps.get_version.outputs.VERSION }}
+          
+          ${{ steps.changelog.outputs.CHANGELOG }}
+          
+          ### Installation
+          
+          ```bash
+          git clone https://github.com/${{ github.repository }}.git
+          cd project-manage
+          git checkout ${{ steps.get_version.outputs.VERSION }}
+          npm install
+          npm start
+          ```
+          
+          ### What's Changed
+          - See commit history for detailed changes
+          
+          **Full Changelog**: https://github.com/${{ github.repository }}/compare/${{ steps.get_version.outputs.VERSION }}
+        draft: false
+        prerelease: ${{ contains(steps.get_version.outputs.VERSION, '-') }}
+
+  # Build and test release
+  test-release:
+    name: Test Release Build
+    runs-on: ubuntu-latest
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: test_password
+          MYSQL_DATABASE: asset_management_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci --only=production
+
+    - name: Create production environment
+      run: |
+        cat > .env << EOF
+        NODE_ENV=production
+        DB_HOST=127.0.0.1
+        DB_USER=root
+        DB_PASSWORD=test_password
+        DB_NAME=asset_management_test
+        DB_PORT=3306
+        SESSION_SECRET=production-secret-key
+        PORT=3000
+        EOF
+
+    - name: Setup database
+      run: |
+        mysql -h 127.0.0.1 -u root -ptest_password asset_management_test < database.sql
+
+    - name: Test production build
+      run: |
+        # Start in production mode
+        NODE_ENV=production npm start &
+        APP_PID=$!
+        
+        # Wait for startup
+        sleep 15
+        
+        # Test application
+        if curl -f http://localhost:3000; then
+          echo "✅ Production build working"
+        else
+          echo "❌ Production build failed"
+          exit 1
+        fi
+        
+        kill $APP_PID
+
+  # Deploy release to production (optional)
+  deploy-release:
+    name: Deploy Release
+    runs-on: ubuntu-latest
+    needs: [create-release, test-release]
+    if: ${{ !contains(github.ref, '-') }} # Only deploy stable releases (not pre-releases)
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Get version from tag
+      id: get_version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+    - name: Deploy to Production Server
+      if: ${{ vars.ENABLE_DEPLOYMENT == 'true' }}
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.PRODUCTION_HOST }}
+        username: ${{ secrets.PRODUCTION_USER }}
+        key: ${{ secrets.PRODUCTION_SSH_KEY }}
+        script: |
+          echo "🚀 Deploying version ${{ steps.get_version.outputs.VERSION }}"
+          
+          # Navigate to application directory (customize path as needed)
+          cd /opt/project-manage || cd ~/project-manage || cd /var/www/project-manage
+          
+          # Pull the latest release
+          git fetch --tags
+          git checkout ${{ steps.get_version.outputs.VERSION }}
+          
+          # Install dependencies
+          npm ci --only=production
+          
+          # Restart the application (customize as needed for your setup)
+          if command -v pm2 &> /dev/null; then
+            pm2 restart asset-management || pm2 start app.js --name asset-management
+          elif command -v systemctl &> /dev/null; then
+            sudo systemctl restart asset-management
+          else
+            # Basic restart - kill existing and start new
+            pkill -f "node app.js" || true
+            nohup node app.js > logs/app.log 2>&1 &
+          fi
+          
+          # Health check
+          sleep 10
+          if curl -f http://localhost:8080/health > /dev/null 2>&1; then
+            echo "✅ Deployment successful - Health check passed"
+          else
+            echo "⚠️  Deployment completed but health check failed"
+          fi
+
+    - name: Deployment Status
+      if: ${{ vars.ENABLE_DEPLOYMENT != 'true' }}
+      run: |
+        echo "📝 Deployment is disabled. To enable automatic deployment:"
+        echo "1. Set repository variable ENABLE_DEPLOYMENT to 'true'"
+        echo "2. Configure the following secrets:"
+        echo "   - PRODUCTION_HOST"
+        echo "   - PRODUCTION_USER" 
+        echo "   - PRODUCTION_SSH_KEY"
+        echo ""
+        echo "Release ${{ steps.get_version.outputs.VERSION }} is ready for manual deployment."
+
+  # Notify about release
+  notify-release:
+    name: Notify Release
+    runs-on: ubuntu-latest
+    needs: [deploy-release]
+    if: always()
+    
+    steps:
+    - name: Get version from tag
+      id: get_version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+    - name: Notify success
+      if: needs.deploy-release.result == 'success'
+      run: |
+        echo "🎉 Release ${{ steps.get_version.outputs.VERSION }} completed successfully!"
+        # Add your notification logic here (Slack, Discord, email, etc.)
+
+    - name: Notify skipped
+      if: needs.deploy-release.result == 'skipped'
+      run: |
+        echo "📦 Release ${{ steps.get_version.outputs.VERSION }} created successfully!"
+        echo "Deployment was skipped - manual deployment may be required."
+
+    - name: Notify failure
+      if: needs.deploy-release.result == 'failure'
+      run: |
+        echo "❌ Release ${{ steps.get_version.outputs.VERSION }} deployment failed!"
+        # Add your notification logic here (Slack, Discord, email, etc.)
